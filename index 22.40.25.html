@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>KHYST TEA</title>
+
+<style>
+
+body{
+font-family:-apple-system,BlinkMacSystemFont;
+background:#f6f6f6;
+margin:0;
+padding:40px;
+}
+
+h1{
+font-size:42px;
+margin-bottom:30px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+gap:24px;
+}
+
+.card{
+background:white;
+border-radius:18px;
+padding:20px;
+box-shadow:0 6px 20px rgba(0,0,0,0.06);
+}
+
+.image{
+width:100%;
+border-radius:14px;
+margin-bottom:14px;
+}
+
+.code{
+font-size:12px;
+letter-spacing:2px;
+color:#888;
+margin-bottom:4px;
+}
+
+.name{
+font-size:22px;
+font-weight:600;
+margin-bottom:6px;
+}
+
+.type{
+font-size:14px;
+color:#666;
+margin-bottom:6px;
+}
+
+.notes{
+font-size:14px;
+color:#777;
+margin-bottom:16px;
+}
+
+.price{
+display:flex;
+justify-content:space-between;
+padding:10px 14px;
+border:1px solid #eee;
+border-radius:10px;
+margin-bottom:8px;
+cursor:pointer;
+}
+
+.price:hover{
+background:#f0f0f0;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:12px;
+background:black;
+color:white;
+font-size:14px;
+cursor:pointer;
+}
+
+.cart{
+position:fixed;
+bottom:20px;
+right:20px;
+background:black;
+color:white;
+padding:14px 20px;
+border-radius:30px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>KHYST TEA</h1>
+
+<div class="grid" id="grid"></div>
+
+<div class="cart" id="cart">
+Cart: <span id="count">0</span>
+</div>
+
+<script>
+
+const TELEGRAM_USERNAME="ururur1"
+
+const products=[
+
+{
+code:"AIR 1",
+name:"Tie Guan Yin",
+type:"Light Oolong · China",
+notes:"орхідея · мед · квіти",
+image:"air1.jpg",
+prices:{50:65,100:130,200:250}
+},
+
+{
+code:"AIR 2",
+name:"Dong Ding",
+type:"Oolong",
+notes:"вершки · мед · квіти",
+image:"air2.jpg",
+prices:{50:58,100:115,200:220}
+},
+
+{
+code:"AIR 3",
+name:"Dong Fang Mei Ren",
+type:"Oolong",
+notes:"мед · фрукти · спеції",
+image:"air3.jpg",
+prices:{50:60,100:120,200:230}
+},
+
+{
+code:"AMBER 2",
+name:"Dian Hong Jin Luo",
+type:"Black Tea · Yunnan",
+notes:"мед · солод · какао",
+image:"amber2.jpg",
+prices:{50:53,100:105,200:200}
+},
+
+{
+code:"NOIR 4",
+name:"Shui Xian",
+type:"Roasted Oolong",
+notes:"дерево · орхідея · сухофрукти",
+image:"noir4.jpg",
+prices:{50:70,100:140,200:260}
+},
+
+{
+code:"GROUND 1",
+name:"GABA Oolong",
+type:"Oolong",
+notes:"слива · мед · карамель",
+image:"ground1.jpg",
+prices:{50:60,100:120,200:230}
+},
+
+{
+code:"GROUND 2",
+name:"GABA Red",
+type:"Red Tea",
+notes:"шоколад · сухофрукти",
+image:"grow2.jpg",
+prices:{50:55,100:110,200:210}
+},
+
+{
+code:"GROUND 4",
+name:"Shou Pu-er",
+type:"Fermented Tea · Yunnan",
+notes:"земля · горіх · деревина",
+image:"ground4.jpg",
+prices:{50:45,100:90,200:170}
+},
+
+{
+code:"ROOT 3",
+name:"Sheng Pu-er",
+type:"Raw Pu-er · Yunnan",
+notes:"трави · абрикос · мед",
+image:"root3.jpg",
+prices:{50:50,100:100,200:190}
+},
+
+{
+code:"ROOT 9",
+name:"Aged Sheng",
+type:"Raw Pu-er",
+notes:"сухофрукти · деревина",
+image:"root9.jpg",
+prices:{50:65,100:130,200:250}
+},
+
+{
+code:"AURA 3",
+name:"White Tea",
+type:"White Tea",
+notes:"квіти · мед",
+image:"aura3.jpg",
+prices:{50:55,100:110,200:210}
+},
+
+{
+code:"AURA 6",
+name:"Silver Needle",
+type:"White Tea",
+notes:"мед · квіти",
+image:"aura6.jpg",
+prices:{50:70,100:140,200:260}
+}
+
+]
+
+const grid=document.getElementById("grid")
+const cart=[]
+const count=document.getElementById("count")
+
+function render(){
+
+grid.innerHTML=""
+
+products.forEach(p=>{
+
+let html=`
+<div class="card">
+
+<img src="${p.image}" class="image">
+
+<div class="code">${p.code}</div>
+<div class="name">${p.name}</div>
+<div class="type">${p.type}</div>
+<div class="notes">${p.notes}</div>
+
+${Object.entries(p.prices).map(([g,price])=>`
+<div class="price" onclick="add('${p.code}',${g},${price})">
+<span>${g} g</span>
+<span>${price} PLN</span>
+</div>
+`).join("")}
+
+<button onclick="buy()">Замовити</button>
+
+</div>
+`
+
+grid.innerHTML+=html
+
+})
+
+}
+
+function add(code,g,price){
+
+cart.push({code,g,price})
+
+count.innerText=cart.length
+
+}
+
+function buy(){
+
+if(cart.length===0)return
+
+let text="Замовлення:%0A"
+
+cart.forEach(i=>{
+text+=`${i.code} — ${i.g}g%0A`
+})
+
+window.open(`https://t.me/${TELEGRAM_USERNAME}?text=${text}`)
+
+}
+
+render()
+
+</script>
+
+</body>
+</html>
