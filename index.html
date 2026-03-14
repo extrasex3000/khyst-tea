@@ -656,7 +656,7 @@ min-width:auto;
     <div class="modal-head">
       <div>
         <h2 class="modal-title">Checkout</h2>
-        <div class="modal-sub">Клієнт заповнює дані тут. Для InPost автоматично додається доставка 20 zł, а для Kraków одразу видно можливість особистого відбору.</div>
+        <div class="modal-sub"></div>
       </div>
       <button class="close-btn" onclick="closeCheckout()" aria-label="Close checkout">×</button>
     </div>
@@ -696,7 +696,7 @@ min-width:auto;
           <div class="field">
             <label class="label" for="deliveryType">Спосіб доставки</label>
             <select class="select" id="deliveryType" name="deliveryType" required></select>
-            <div class="helper" id="deliveryHelper">Вкажи місто, щоб побачити доступні варіанти доставки.</div>
+            <div class="helper" id="deliveryHelper">Вкажи місто, в Кракові доступний відбір особистий.</div>
           </div>
 
           <div class="field full">
@@ -709,10 +709,6 @@ min-width:auto;
             <label class="label" for="customerComment">Коментар <span class="optional">(необов’язково)</span></label>
             <textarea class="textarea" id="customerComment" name="customerComment" placeholder="Наприклад: писати тільки в Instagram, без дзвінка"></textarea>
           </div>
-        </div>
-
-        <div class="notice">
-          Після натискання кнопки замовлення заявка відправляється автоматично. Для InPost доставка 20 zł додається до суми замовлення. Коментар можна залишити порожнім.
         </div>
 
         <div class="form-status" id="formStatus" aria-live="polite"></div>
@@ -739,7 +735,7 @@ min-width:auto;
 
       <div class="hero-copy">
         <p><strong>Чай — це не напій, а шлях</strong> уваги, часу і внутрішньої тиші.</p>
-        <p>Обирай добру воду — м’яку, чисту, без каміння. У такій воді чай чути краще.</p>
+        <p>Обирай м’яку, гарну воду. У такій воді чай чути краще.</p>
         <p>Заварюй проливами. Перші настої — для знайомства, наступні — для розкриття.</p>
         <p>Слухай аромат, смак і стан — чай говорить тонко.</p>
         <p><strong>@KHYST.tea</strong></p>
@@ -761,7 +757,7 @@ min-width:auto;
 </div>
 
 <script>
-const ORDER_ENDPOINT = "https://REPLACE_WITH_YOUR_WORKER_URL";
+const ORDER_ENDPOINT = "https://morning-wave-bbbc.ilyaha00.workers.dev";
 const STORAGE_KEY = "khyst_cart_v3";
 
 const products = [
@@ -1040,7 +1036,7 @@ function updateDeliveryOptions(){
   if(stillExists) select.value = current;
 
   if(!city.trim()) {
-    helper.textContent = "Вкажи місто, щоб побачити доступні варіанти доставки.";
+    helper.textContent = "Вкажи місто, щоб побачити доступні варіанти доставки, для Kraków доступний особистий відбір.";
   } else if(krakow) {
     helper.textContent = "Для Kraków доступний особистий відбір або InPost 20 zł.";
   } else {
