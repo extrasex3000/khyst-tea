@@ -549,6 +549,8 @@ font-size:14px;
 margin-bottom:8px;
 }
 .checkout-item:last-child{margin-bottom:0;}
+.delivery-line{padding-top:8px; margin-top:8px; border-top:1px solid var(--line); font-weight:700;}
+.hero-copy p:first-child strong{font-weight:800; letter-spacing:.01em;}
 .checkout-bottom{
 display:flex;
 gap:10px;
@@ -656,7 +658,7 @@ min-width:auto;
     <div class="modal-head">
       <div>
         <h2 class="modal-title">Checkout</h2>
-        <div class="modal-sub"></div>
+        <div class="modal-sub">Заповни дані для замовлення. Для InPost доставка 20 zł додається автоматично, у Kraków доступний також особистий відбір.</div>
       </div>
       <button class="close-btn" onclick="closeCheckout()" aria-label="Close checkout">×</button>
     </div>
@@ -671,7 +673,7 @@ min-width:auto;
         </div>
       </div>
 
-      <form id="checkoutForm" onsubmit="submitOrder(event)">
+      <form id="checkoutForm" onsubmit="submitOrder(event)" novalidate>
         <div class="checkout-grid">
           <div class="field">
             <label class="label" for="customerName">Ім’я</label>
@@ -696,7 +698,7 @@ min-width:auto;
           <div class="field">
             <label class="label" for="deliveryType">Спосіб доставки</label>
             <select class="select" id="deliveryType" name="deliveryType" required></select>
-            <div class="helper" id="deliveryHelper">Вкажи місто, в Кракові доступний відбір особистий.</div>
+            <div class="helper" id="deliveryHelper">Вкажи місто. Для Kraków доступний особистий відбір, для інших міст — InPost 20 zł.</div>
           </div>
 
           <div class="field full">
@@ -734,7 +736,7 @@ min-width:auto;
       </div>
 
       <div class="hero-copy">
-        <p><strong>Чай — це не напій, а шлях</strong> уваги, часу і внутрішньої тиші.</p>
+        <p><strong>Чай — це не напій, а шлях уваги, часу і внутрішньої тиші.</strong></p>
         <p>Обирай м’яку, гарну воду. У такій воді чай чути краще.</p>
         <p>Заварюй проливами. Перші настої — для знайомства, наступні — для розкриття.</p>
         <p>Слухай аромат, смак і стан — чай говорить тонко.</p>
@@ -1033,7 +1035,13 @@ function updateDeliveryOptions(){
   select.innerHTML = options.map(option => `<option value="${option.value}">${option.text}</option>`).join("");
 
   const stillExists = options.some(option => option.value === current);
-  if(stillExists) select.value = current;
+  if(stillExists) {
+    select.value = current;
+  } else if (krakow) {
+    select.value = "Osobisty odbiór w Krakowie";
+  } else {
+    select.value = "InPost";
+  }
 
   if(!city.trim()) {
     helper.textContent = "Вкажи місто, щоб побачити доступні варіанти доставки, для Kraków доступний особистий відбір.";
@@ -1066,15 +1074,16 @@ function updateInPostFields(){
   const priceHelper = document.getElementById("deliveryPriceHelper");
   const isInPost = type === "InPost";
 
+  emailField.required = isInPost;
+  emailField.setCustomValidity("");
+
   if(isInPost) {
     contactField.placeholder = "+48... (для InPost номер телефону обов’язковий)";
-    emailField.required = true;
     emailField.placeholder = "Для InPost e-mail обов’язковий";
     emailOptionalLabel.textContent = "(обов’язково для InPost)";
     priceHelper.textContent = "Доставка InPost 20 zł додається до замовлення. Для InPost обов’язково вкажи номер телефону та e-mail.";
   } else {
     contactField.placeholder = "@username або +48...";
-    emailField.required = false;
     emailField.placeholder = "Наприклад: anna@gmail.com";
     emailOptionalLabel.textContent = "(необов’язково)";
     priceHelper.textContent = "Для особистого відбору в Kraków доставка не додається. Вкажи район або зручний час зустрічі.";
@@ -1116,6 +1125,11 @@ async function submitOrder(event){
   const customerComment = String(form.get("customerComment") || "").trim();
 
   clearFormStatus();
+
+  if(!customerName || !customerContact || !customerCity || !deliveryType || !deliveryDetails) {
+    setFormStatus("error", "Заповни всі обов’язкові поля.");
+    return;
+  }
 
   if(deliveryType === "InPost") {
     const hasPhoneNumber = /\d{7,}/.test(customerContact.replace(/\s+/g, ""));
@@ -1175,7 +1189,7 @@ async function submitOrder(event){
       throw new Error(data.error || "Не вдалося відправити замовлення.");
     }
 
-    setFormStatus("success", "Дякуємо за замовлення. З тобою зконтактується менеджер Хист.");
+    setFormStatus("success", "Дякуємо за замовлення. З тобою зконтактується менеджер KHYST.");
     showToast("Order sent");
     cart = [];
     saveCart();
@@ -1189,7 +1203,7 @@ async function submitOrder(event){
       closeCheckout();
       closeCart();
       clearFormStatus();
-    }, 1200);
+    }, 1400);
   } catch (error) {
     setFormStatus("error", error.message || "Помилка відправки. Спробуй ще раз.");
   } finally {
