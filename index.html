@@ -656,7 +656,7 @@ min-width:auto;
     <div class="modal-head">
       <div>
         <h2 class="modal-title">Checkout</h2>
-        <div class="modal-sub">Клієнт заповнює дані тут, а не в чаті. Коментар позначений як необов’язковий.</div>
+        <div class="modal-sub">Клієнт заповнює дані тут. Для InPost автоматично додається доставка 20 zł, а для Kraków одразу видно можливість особистого відбору.</div>
       </div>
       <button class="close-btn" onclick="closeCheckout()" aria-label="Close checkout">×</button>
     </div>
@@ -684,6 +684,11 @@ min-width:auto;
           </div>
 
           <div class="field">
+            <label class="label" for="customerEmail">E-mail <span class="optional" id="emailOptionalLabel">(необов’язково)</span></label>
+            <input class="input" id="customerEmail" name="customerEmail" type="email" placeholder="Наприклад: anna@gmail.com">
+          </div>
+
+          <div class="field">
             <label class="label" for="customerCity">Місто</label>
             <input class="input" id="customerCity" name="customerCity" type="text" required placeholder="Наприклад: Kraków" oninput="updateDeliveryOptions()">
           </div>
@@ -697,6 +702,7 @@ min-width:auto;
           <div class="field full">
             <label class="label" for="deliveryDetails">Деталі доставки</label>
             <input class="input" id="deliveryDetails" name="deliveryDetails" type="text" required placeholder="Для InPost: paczkomat / адреса. Для особистого відбору: зручний район або час.">
+            <div class="helper" id="deliveryPriceHelper">Для InPost доставка коштує 20 zł і буде автоматично додана до суми замовлення.</div>
           </div>
 
           <div class="field full">
@@ -706,7 +712,7 @@ min-width:auto;
         </div>
 
         <div class="notice">
-          Після натискання кнопки замовлення заявка відправляється автоматично. Коментар можна залишити порожнім.
+          Після натискання кнопки замовлення заявка відправляється автоматично. Для InPost доставка 20 zł додається до суми замовлення. Коментар можна залишити порожнім.
         </div>
 
         <div class="form-status" id="formStatus" aria-live="polite"></div>
@@ -755,7 +761,7 @@ min-width:auto;
 </div>
 
 <script>
-const ORDER_ENDPOINT = "https://morning-wave-bbbc.ilyaha00.workers.dev/";
+const ORDER_ENDPOINT = "https://REPLACE_WITH_YOUR_WORKER_URL";
 const STORAGE_KEY = "khyst_cart_v3";
 
 const products = [
@@ -978,9 +984,20 @@ function closeCheckout(){
   }
 }
 
+function getDeliveryPrice(deliveryType){
+  return deliveryType === "InPost" ? 20 : 0;
+}
+
+function getFinalTotal(deliveryType){
+  return getCartTotal() + getDeliveryPrice(deliveryType);
+}
+
 function renderCheckoutSummary(){
   const itemsBox = document.getElementById("checkoutSummaryItems");
   const totalBox = document.getElementById("checkoutSummaryTotal");
+  const deliveryType = document.getElementById("deliveryType") ? document.getElementById("deliveryType").value : "";
+  const deliveryPrice = getDeliveryPrice(deliveryType);
+  const cartTotal = getCartTotal();
 
   itemsBox.innerHTML = cart.map(item => `
     <div class="checkout-item">
@@ -989,7 +1006,16 @@ function renderCheckoutSummary(){
     </div>
   `).join("");
 
-  totalBox.textContent = getCartTotal() + " PLN";
+  if(deliveryPrice > 0) {
+    itemsBox.innerHTML += `
+      <div class="checkout-item delivery-line">
+        <span>Dostawa InPost</span>
+        <span>${deliveryPrice} PLN</span>
+      </div>
+    `;
+  }
+
+  totalBox.textContent = getFinalTotal(deliveryType) + " PLN";
 }
 
 function updateDeliveryOptions(){
@@ -1002,10 +1028,10 @@ function updateDeliveryOptions(){
   const options = krakow
     ? [
         { value: "Osobisty odbiór w Krakowie", text: "Osobisty odbiór w Krakowie" },
-        { value: "InPost", text: "InPost" }
+        { value: "InPost", text: "InPost (+20 zł)" }
       ]
     : [
-        { value: "InPost", text: "InPost" }
+        { value: "InPost", text: "InPost (+20 zł)" }
       ];
 
   select.innerHTML = options.map(option => `<option value="${option.value}">${option.text}</option>`).join("");
@@ -1016,12 +1042,14 @@ function updateDeliveryOptions(){
   if(!city.trim()) {
     helper.textContent = "Вкажи місто, щоб побачити доступні варіанти доставки.";
   } else if(krakow) {
-    helper.textContent = "Для Kraków доступний особистий відбір або InPost.";
+    helper.textContent = "Для Kraków доступний особистий відбір або InPost 20 zł.";
   } else {
-    helper.textContent = "Для цього міста залишився тільки варіант InPost.";
+    helper.textContent = "Для цього міста доступний InPost 20 zł.";
   }
 
   updateDeliveryPlaceholder();
+  updateInPostFields();
+  renderCheckoutSummary();
 }
 
 function updateDeliveryPlaceholder(){
@@ -1034,7 +1062,34 @@ function updateDeliveryPlaceholder(){
   }
 }
 
-document.getElementById("deliveryType").addEventListener("change", updateDeliveryPlaceholder);
+function updateInPostFields(){
+  const type = document.getElementById("deliveryType").value;
+  const contactField = document.getElementById("customerContact");
+  const emailField = document.getElementById("customerEmail");
+  const emailOptionalLabel = document.getElementById("emailOptionalLabel");
+  const priceHelper = document.getElementById("deliveryPriceHelper");
+  const isInPost = type === "InPost";
+
+  if(isInPost) {
+    contactField.placeholder = "+48... (для InPost номер телефону обов’язковий)";
+    emailField.required = true;
+    emailField.placeholder = "Для InPost e-mail обов’язковий";
+    emailOptionalLabel.textContent = "(обов’язково для InPost)";
+    priceHelper.textContent = "Доставка InPost 20 zł додається до замовлення. Для InPost обов’язково вкажи номер телефону та e-mail.";
+  } else {
+    contactField.placeholder = "@username або +48...";
+    emailField.required = false;
+    emailField.placeholder = "Наприклад: anna@gmail.com";
+    emailOptionalLabel.textContent = "(необов’язково)";
+    priceHelper.textContent = "Для особистого відбору в Kraków доставка не додається. Вкажи район або зручний час зустрічі.";
+  }
+}
+
+document.getElementById("deliveryType").addEventListener("change", () => {
+  updateDeliveryPlaceholder();
+  updateInPostFields();
+  renderCheckoutSummary();
+});
 
 function setFormStatus(type, text){
   const box = document.getElementById("formStatus");
@@ -1058,6 +1113,7 @@ async function submitOrder(event){
   const form = new FormData(formElement);
   const customerName = String(form.get("customerName") || "").trim();
   const customerContact = String(form.get("customerContact") || "").trim();
+  const customerEmail = String(form.get("customerEmail") || "").trim();
   const customerCity = String(form.get("customerCity") || "").trim();
   const deliveryType = String(form.get("deliveryType") || "").trim();
   const deliveryDetails = String(form.get("deliveryDetails") || "").trim();
@@ -1065,10 +1121,25 @@ async function submitOrder(event){
 
   clearFormStatus();
 
+  if(deliveryType === "InPost") {
+    const hasPhoneNumber = /\d{7,}/.test(customerContact.replace(/\s+/g, ""));
+    if(!hasPhoneNumber) {
+      setFormStatus("error", "Для InPost потрібно вказати номер телефону в полі контакту.");
+      return;
+    }
+    if(!customerEmail) {
+      setFormStatus("error", "Для InPost потрібно вказати e-mail.");
+      return;
+    }
+  }
+
+  const deliveryPrice = getDeliveryPrice(deliveryType);
+
   const payload = {
     customer: {
       name: customerName,
       contact: customerContact,
+      email: customerEmail || "",
       city: customerCity,
       deliveryType,
       deliveryDetails,
@@ -1083,7 +1154,9 @@ async function submitOrder(event){
       unitPrice: item.price,
       lineTotal: item.price * item.qty
     })),
-    total: getCartTotal(),
+    subtotal: getCartTotal(),
+    deliveryPrice,
+    total: getFinalTotal(deliveryType),
     source: "khyst-site"
   };
 
@@ -1106,7 +1179,7 @@ async function submitOrder(event){
       throw new Error(data.error || "Не вдалося відправити замовлення.");
     }
 
-    setFormStatus("success", "Дякуємо. Замовлення відправлено. Ми зв’яжемось із вами найближчим часом.");
+    setFormStatus("success", "Дякуємо за замовлення. З тобою зконтактується менеджер Хист.");
     showToast("Order sent");
     cart = [];
     saveCart();
