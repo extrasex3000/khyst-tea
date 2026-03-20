@@ -221,22 +221,15 @@ overflow:hidden;
 margin-bottom:14px;
 background:#f7f6f3;
 position:relative;
-display:flex;
-align-items:center;
-justify-content:center;
-padding:16px;
 }
 .image img{
 width:100%;
 height:100%;
-object-fit:contain;
-object-position:center;
+object-fit:cover;
 display:block;
 transition:transform .3s ease;
-transform:scale(var(--img-scale, 1));
-transform-origin:center;
 }
-.card:hover .image img{transform:scale(calc(var(--img-scale, 1) * 1.03));}
+.card:hover .image img{transform:scale(1.03);}
 .series-mark{
 position:absolute;
 top:10px;
@@ -807,11 +800,11 @@ const products = [
 {code:"GROUND 4",name:"GABA Black",type:"GABA Oolong",notes:"mango · chocolate · caramel",image:"ground4.jpg",prices:{50:60,100:120,200:230}},
 {code:"GROW 2",name:"Huang Shan Mao Feng",type:"Green Tea",notes:"umami · chestnut · flowers",image:"grow2.jpg",prices:{50:45,100:90,200:170}},
 {code:"ROOT 3",name:"Hong Tai Chang Shu 2015",type:"Shu Pu-erh",notes:"wood · earth · chocolate",image:"root3.jpg",prices:{50:100,100:200,200:380}},
-{code:"ROOT 7",name:"Lao Cha Tou",type:"Shu Pu-erh nuggets",notes:"deep · sweet · earthy",image:"root7-clean.png",imageScale:1,prices:{50:60,100:120,200:230}},
+{code:"ROOT 7",name:"Lao Cha Tou",type:"Shu Pu-erh nuggets",notes:"deep · sweet · earthy",image:"root7.jpg",prices:{50:60,100:120,200:230}},
 {code:"ROOT 9",name:"Dayi 7572",type:"Shu Pu-erh cake",notes:"classic factory shu",image:"root9.jpg",prices:{357:200},wholeCake:true},
 {code:"AURA 3",name:"Bai Hao Yin Zhen",type:"White Tea",notes:"flowers · honey · spring herbs",image:"aura3.jpg",prices:{50:48,100:95,200:180}},
 {code:"AURA 6",name:"White Gu Shu",type:"White Tea",notes:"flowers · honey · dried fruit",image:"aura6.jpg",prices:{50:58,100:115,200:220}},
-{code:"AURA 9",name:"Shou Mei",type:"White Tea",notes:"dried herbs · honey · autumn leaves",image:"aura9-clean.png",imageScale:1,prices:{50:45,100:90,200:170}}
+{code:"AURA 9",name:"Shou Mei",type:"White Tea",notes:"dried herbs · honey · autumn leaves",image:"aura9-clean.png",prices:{50:45,100:90,200:170}}
 ];
 
 let cart = [];
@@ -912,7 +905,7 @@ function renderProducts(){
     grid.innerHTML += `
       <div class="card" data-series="${p.code.split(" ")[0]}">
         <div class="image">
-          <img src="${p.image}" alt="${p.name}" style="--img-scale:${p.imageScale || 1};">
+          <img src="${p.image}" alt="${p.name}">
           <div class="series-mark">
             <img src="khyst-icon.png" alt="" aria-hidden="true">
           </div>
