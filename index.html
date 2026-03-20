@@ -206,25 +206,21 @@ border:1px solid rgba(0,0,0,.03);
 transform:translateY(-6px);
 box-shadow:0 18px 40px rgba(0,0,0,.1);
 }
-.series-line{
-height:4px;
-width:70px;
-border-radius:999px;
-margin-bottom:14px;
-}
-.card[data-series="AIR"] .series-line{background:var(--air);}
-.card[data-series="AMBER"] .series-line{background:var(--amber);}
-.card[data-series="NOIR"] .series-line{background:var(--noir);}
-.card[data-series="GROUND"] .series-line{background:var(--ground);}
-.card[data-series="GROW"] .series-line{background:var(--grow);}
-.card[data-series="ROOT"] .series-line{background:var(--root);}
-.card[data-series="AURA"] .series-line{background:var(--aura);}
+.card[data-series="AIR"]{--series-color:var(--air);}
+.card[data-series="AMBER"]{--series-color:var(--amber);}
+.card[data-series="NOIR"]{--series-color:var(--noir);}
+.card[data-series="GROUND"]{--series-color:var(--ground);}
+.card[data-series="GROW"]{--series-color:var(--grow);}
+.card[data-series="ROOT"]{--series-color:var(--root);}
+.card[data-series="AURA"]{--series-color:var(--aura);}
+
 .image{
 aspect-ratio:4/3;
 border-radius:14px;
 overflow:hidden;
 margin-bottom:14px;
 background:#f7f6f3;
+position:relative;
 }
 .image img{
 width:100%;
@@ -234,6 +230,27 @@ display:block;
 transition:transform .3s ease;
 }
 .card:hover .image img{transform:scale(1.03);}
+.series-mark{
+position:absolute;
+top:10px;
+right:10px;
+width:34px;
+height:34px;
+border-radius:999px;
+background:var(--series-color);
+display:flex;
+align-items:center;
+justify-content:center;
+box-shadow:0 8px 18px rgba(0,0,0,.16);
+z-index:2;
+overflow:hidden;
+}
+.series-mark img{
+width:62%;
+height:62%;
+object-fit:contain;
+display:block;
+}
 .name{
 font-size:14px;
 color:#777;
@@ -269,12 +286,23 @@ transition:.2s ease;
 background:#fff;
 }
 .price:hover{
-background:#faf9f7;
+background:#dcefd4;
+border-color:#9bc78f;
 transform:translateY(-1px);
 }
 .price.added{
 background:var(--success);
 border-color:var(--success-line);
+}
+.price.selected{
+background:#dcefd4;
+border-color:#9bc78f;
+color:var(--text);
+}
+.price.selected:hover{
+background:#dcefd4;
+border-color:#9bc78f;
+transform:translateY(-1px);
 }
 
 .overlay{
@@ -772,9 +800,11 @@ const products = [
 {code:"GROUND 4",name:"GABA Black",type:"GABA Oolong",notes:"mango · chocolate · caramel",image:"ground4.jpg",prices:{50:60,100:120,200:230}},
 {code:"GROW 2",name:"Huang Shan Mao Feng",type:"Green Tea",notes:"umami · chestnut · flowers",image:"grow2.jpg",prices:{50:45,100:90,200:170}},
 {code:"ROOT 3",name:"Hong Tai Chang Shu 2015",type:"Shu Pu-erh",notes:"wood · earth · chocolate",image:"root3.jpg",prices:{50:100,100:200,200:380}},
-{code:"ROOT 9",name:"Dayi 7572",type:"Shu Pu-erh cake",notes:"classic factory shu",image:"root9.jpg",prices:{200:200}},
+{code:"ROOT 7",name:"Lao Cha Tou",type:"Shu Pu-erh nuggets",notes:"deep · sweet · earthy",image:"root7.jpg",prices:{50:60,100:120,200:230}},
+{code:"ROOT 9",name:"Dayi 7572",type:"Shu Pu-erh cake",notes:"classic factory shu",image:"root9.jpg",prices:{357:200},wholeCake:true},
 {code:"AURA 3",name:"Bai Hao Yin Zhen",type:"White Tea",notes:"flowers · honey · spring herbs",image:"aura3.jpg",prices:{50:48,100:95,200:180}},
-{code:"AURA 6",name:"White Gu Shu",type:"White Tea",notes:"flowers · honey · dried fruit",image:"aura6.jpg",prices:{50:58,100:115,200:220}}
+{code:"AURA 6",name:"White Gu Shu",type:"White Tea",notes:"flowers · honey · dried fruit",image:"aura6.jpg",prices:{50:58,100:115,200:220}},
+{code:"AURA 9",name:"Shou Mei",type:"White Tea",notes:"dried herbs · honey · autumn leaves",image:"aura9.jpg",prices:{50:45,100:90,200:170}}
 ];
 
 let cart = [];
@@ -823,6 +853,25 @@ function getCartTotal(){
   return cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 }
 
+function getProductByCode(code){
+  return products.find(product => product.code === code) || null;
+}
+
+function formatWeightLabel(productOrCode, grams){
+  const product = typeof productOrCode === "string" ? getProductByCode(productOrCode) : productOrCode;
+  if(product && product.wholeCake) return `${grams} g · cake`;
+  return `${grams} g`;
+}
+
+function buildCartItemId(code, grams){
+  return `${code}-${grams}`;
+}
+
+function isCartSelectionActive(code, grams){
+  const id = buildCartItemId(code, grams);
+  return cart.some(item => item.id === id);
+}
+
 function updateCartUI(){
   const count = getCartItemsCount();
   const total = getCartTotal();
@@ -843,9 +892,11 @@ function renderProducts(){
   products.forEach(p => {
     let prices = "";
     for(const grams in p.prices){
+      const id = buildCartItemId(p.code, grams);
+      const isSelected = isCartSelectionActive(p.code, grams);
       prices += `
-        <div class="price" onclick="addToCart('${escapeForAttr(p.code)}','${escapeForAttr(p.name)}',${grams},${p.prices[grams]}, this)">
-          <span>${grams} g</span>
+        <div class="price ${isSelected ? 'selected' : ''}" data-cart-id="${id}" onclick="addToCart('${escapeForAttr(p.code)}','${escapeForAttr(p.name)}',${grams},${p.prices[grams]}, this)">
+          <span>${formatWeightLabel(p, grams)}</span>
           <span>${p.prices[grams]} PLN</span>
         </div>
       `;
@@ -853,9 +904,11 @@ function renderProducts(){
 
     grid.innerHTML += `
       <div class="card" data-series="${p.code.split(" ")[0]}">
-        <div class="series-line"></div>
         <div class="image">
           <img src="${p.image}" alt="${p.name}">
+          <div class="series-mark">
+            <img src="khyst-icon.png" alt="" aria-hidden="true">
+          </div>
         </div>
         <div class="name">${p.name}</div>
         <div class="code">${p.code}</div>
@@ -867,24 +920,42 @@ function renderProducts(){
   });
 }
 
+function updateSelectedPriceButtons(){
+  document.querySelectorAll('.price[data-cart-id]').forEach(button => {
+    const id = button.getAttribute('data-cart-id');
+    const isSelected = cart.some(item => item.id === id);
+    button.classList.toggle('selected', isSelected);
+  });
+}
+
 function escapeForAttr(text){
   return String(text).replace(/'/g, "\\'");
 }
 
 function addToCart(code, name, grams, price, el){
-  const id = `${code}-${grams}`;
+  const id = buildCartItemId(code, grams);
+  const product = getProductByCode(code);
   const existing = cart.find(item => item.id === id);
 
   if(existing){
     existing.qty += 1;
   } else {
-    cart.push({ id, code, name, grams, price, qty: 1 });
+    cart.push({
+      id,
+      code,
+      name,
+      grams,
+      price,
+      qty: 1,
+      wholeCake: Boolean(product && product.wholeCake)
+    });
   }
 
   saveCart();
   renderCart();
   updateCartUI();
-  showToast(`${code} · ${grams}g added`);
+  updateSelectedPriceButtons();
+  showToast(`${code} · ${formatWeightLabel(product || code, grams)} added`);
 
   if(el){
     el.classList.add("added");
@@ -902,6 +973,7 @@ function changeQty(id, delta){
   saveCart();
   renderCart();
   updateCartUI();
+  updateSelectedPriceButtons();
   renderCheckoutSummary();
 }
 
@@ -910,6 +982,7 @@ function removeItem(id){
   saveCart();
   renderCart();
   updateCartUI();
+  updateSelectedPriceButtons();
   renderCheckoutSummary();
 }
 
@@ -918,6 +991,7 @@ function clearCart(){
   saveCart();
   renderCart();
   updateCartUI();
+  updateSelectedPriceButtons();
   renderCheckoutSummary();
   closeCheckout();
   showToast("Cart cleared");
@@ -936,7 +1010,7 @@ function renderCart(){
       <div class="cart-item-top">
         <div>
           <div class="cart-item-name">${item.code}</div>
-          <div class="cart-item-meta">${item.name} · ${item.grams} g</div>
+          <div class="cart-item-meta">${item.name} · ${formatWeightLabel(item.code, item.grams)}</div>
         </div>
         <div class="cart-item-price">${item.price * item.qty} PLN</div>
       </div>
@@ -999,7 +1073,7 @@ function renderCheckoutSummary(){
 
   itemsBox.innerHTML = cart.map(item => `
     <div class="checkout-item">
-      <span>${item.code} · ${item.grams} g × ${item.qty}</span>
+      <span>${item.code} · ${formatWeightLabel(item.code, item.grams)} × ${item.qty}</span>
       <span>${item.price * item.qty} PLN</span>
     </div>
   `).join("");
@@ -1196,6 +1270,7 @@ async function submitOrder(event){
     renderCart();
     renderCheckoutSummary();
     updateCartUI();
+    updateSelectedPriceButtons();
     formElement.reset();
     updateDeliveryOptions();
 
@@ -1225,6 +1300,7 @@ renderProducts();
 renderCart();
 renderCheckoutSummary();
 updateCartUI();
+updateSelectedPriceButtons();
 updateDeliveryOptions();
 </script>
 </body>
